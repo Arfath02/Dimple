@@ -1,40 +1,41 @@
+# dataset.py
 import os
+from PIL import Image
+import numpy as np
 import torch
 from torch.utils.data import Dataset
-from PIL import Image
-from torchvision import transforms
+import torchvision.transforms as T
 
 class CustomDataset(Dataset):
-    def __init__(self, images_dir, masks_dir, image_size=(256, 256)):
-        self.images_dir = images_dir
-        self.masks_dir = masks_dir
+    def __init__(self, image_dir, mask_dir, image_size=(256, 256)):
+        self.image_dir = image_dir
+        self.mask_dir = mask_dir
         self.image_size = image_size
-
-        self.image_files = sorted(os.listdir(images_dir))
-        self.mask_files = sorted(os.listdir(masks_dir))
-
-        self.image_transform = transforms.Compose([
-            transforms.Resize(self.image_size),
-            transforms.ToTensor()
+        self.image_files = sorted(os.listdir(image_dir))
+        self.mask_files = sorted(os.listdir(mask_dir))
+        self.transform = T.Compose([
+            T.Resize(image_size),
+            T.ToTensor()
         ])
-
-        self.mask_transform = transforms.Compose([
-            transforms.Resize(self.image_size),
-            transforms.ToTensor()
+        self.mask_transform = T.Compose([
+            T.Resize(image_size),
+            T.ToTensor()
         ])
 
     def __len__(self):
         return len(self.image_files)
 
     def __getitem__(self, idx):
-        image_path = os.path.join(self.images_dir, self.image_files[idx])
-        mask_path = os.path.join(self.masks_dir, self.mask_files[idx])
+        img_path = os.path.join(self.image_dir, self.image_files[idx])
+        mask_path = os.path.join(self.mask_dir, self.mask_files[idx])
 
-        image = Image.open(image_path).convert("RGB")
-        mask = Image.open(mask_path).convert("L")  # Grayscale for binary mask
+        image = Image.open(img_path).convert("RGB")
+        mask = Image.open(mask_path).convert("L")  # Grayscale for binary masks
 
-        image = self.image_transform(image)
+        image = self.transform(image)
         mask = self.mask_transform(mask)
-        mask = (mask > 0.5).float()  # Ensure binary mask (0 or 1)
+
+        # Ensure mask is binary (0 or 1)
+        mask = (mask > 0.5).float()
 
         return image, mask
